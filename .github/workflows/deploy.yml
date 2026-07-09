@@ -29,6 +29,9 @@ jobs:
         env:
           # Il repo determina il sottopath servito da Pages.
           BASE_PATH: /${{ github.event.repository.name }}/
+          # Se il secret non esiste, l'app funziona lo stesso: niente backup Drive.
+          # Non e un segreto vero (finisce nel bundle), ma non va scritto nel repo.
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -6,11 +6,14 @@ import { PACKAGE_POSTE } from '../core/salvadanaio';
 import { db, leggiProfilo, salvaProfilo } from '../data/db';
 import { iniziaPausa, terminaPausa } from '../data/pauseActions';
 import { esportaJson, importaJson } from '../data/backup';
+import { caricaBackup, driveConfigurato, scaricaBackup } from '../data/drive';
+import { CLIENT_ID, chiediToken } from '../data/googleAuth';
 
 export function Impostazioni() {
   const profilo = useLiveQuery(() => leggiProfilo(), []);
   const pause = useLiveQuery(() => db.pauses.toArray(), []);
   const [errore, setErrore] = useState('');
+  const [esitoDrive, setEsitoDrive] = useState('');
 
   // Derivato dai record, non da stato duplicato: la pausa scade da sola dopo 7 giorni.
   const ora = Date.now();
@@ -49,6 +52,38 @@ export function Impostazioni() {
       await importaJson(await file.text());
     } catch (e) {
       setErrore(e instanceof Error ? e.message : 'Backup non valido');
+    }
+  }
+
+  async function salvaSuDrive() {
+    setErrore('');
+    setEsitoDrive('Collegamento a Drive...');
+    try {
+      const token = await chiediToken();
+      await caricaBackup(token, await esportaJson());
+      setEsitoDrive(`Backup salvato su Drive il ${new Date().toLocaleString('it-IT')}.`);
+    } catch (e) {
+      setEsitoDrive('');
+      setErrore(e instanceof Error ? e.message : 'Backup su Drive fallito.');
+    }
+  }
+
+  async function ripristinaDaDrive() {
+    setErrore('');
+    setEsitoDrive('Lettura da Drive...');
+    try {
+      const token = await chiediToken();
+      const json = await scaricaBackup(token);
+      if (!json) {
+        setEsitoDrive('');
+        setErrore('Su Drive non c e nessun backup.');
+        return;
+      }
+      await importaJson(json);
+      setEsitoDrive('Dati ripristinati da Drive.');
+    } catch (e) {
+      setEsitoDrive('');
+      setErrore(e instanceof Error ? e.message : 'Ripristino fallito.');
     }
   }
 
@@ -147,6 +182,26 @@ export function Impostazioni() {
           onChange={(e) => e.target.files?.[0] && importa(e.target.files[0])}
         />
       </label>
+
+      <h2 style={{ marginTop: '1.5rem' }}>Google Drive</h2>
+      {driveConfigurato(CLIENT_ID) ? (
+        <>
+          <p className="sottotitolo">
+            Un solo file JSON in una cartella privata dell app. Nessun altro puo leggerlo, nemmeno le altre tue app.
+          </p>
+          <button className="pulsante-secondario" onClick={salvaSuDrive}>
+            Salva su Drive
+          </button>{' '}
+          <button className="pulsante-secondario" onClick={ripristinaDaDrive}>
+            Ripristina da Drive
+          </button>
+          {esitoDrive && <p className="sottotitolo">{esitoDrive}</p>}
+        </>
+      ) : (
+        <p className="sottotitolo">
+          Backup Drive non configurato: manca VITE_GOOGLE_CLIENT_ID. Export e import JSON funzionano lo stesso.
+        </p>
+      )}
 
       {errore && <p className="sottotitolo" style={{ color: 'var(--rosso)' }}>{errore}</p>}
     </main>
