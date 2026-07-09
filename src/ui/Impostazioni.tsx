@@ -8,6 +8,7 @@ import { iniziaPausa, terminaPausa } from '../data/pauseActions';
 import { esportaJson, importaJson } from '../data/backup';
 import { caricaBackup, driveConfigurato, scaricaBackup } from '../data/drive';
 import { CLIENT_ID, chiediToken } from '../data/googleAuth';
+import { VERSIONE } from '../version';
 
 export function Impostazioni() {
   const profilo = useLiveQuery(() => leggiProfilo(), []);
@@ -204,6 +205,10 @@ export function Impostazioni() {
       )}
 
       {errore && <p className="sottotitolo" style={{ color: 'var(--rosso)' }}>{errore}</p>}
+
+      <p className="sottotitolo" style={{ marginTop: '2rem', opacity: 0.6 }}>
+        Versione {VERSIONE}
+      </p>
     </main>
   );
 }

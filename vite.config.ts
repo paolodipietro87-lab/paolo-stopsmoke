@@ -1,16 +1,21 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { versioneBuild } from './build-version.ts';
 
 // Su GitHub Pages l'app vive sotto /<repo>/: base configurabile senza toccare il codice.
 const base = process.env.BASE_PATH ?? '/paolo-stopsmoke/';
 
 export default defineConfig({
   base,
+  define: { __APP_VERSION__: JSON.stringify(versioneBuild()) },
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt', non 'autoUpdate': l'aggiornamento silenzioso arriva solo alla seconda
+      // riapertura e senza conferma. Qui il banner lo rende immediato e visibile.
+      registerType: 'prompt',
+      injectRegister: null, // la registrazione la fa AggiornamentoPwa via virtual:pwa-register/react
       includeAssets: ['icona-192.png', 'icona-512.png', 'icona-maskable-512.png'],
       manifest: {
         name: 'Smoke Timer',

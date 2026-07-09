@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import App from '../App';
 import { db } from '../data/db';
 import { pausaAttiva } from '../data/pauseActions';
+import { VERSIONE } from '../version';
 
 beforeEach(async () => {
   await db.delete();
@@ -46,6 +47,15 @@ describe('Impostazioni', () => {
     await waitFor(async () => expect(await pausaAttiva(Date.now())).not.toBeNull());
     expect(await screen.findByRole('button', { name: 'Riprendi il piano' })).toBeTruthy();
     expect(screen.getByText(/Piano in pausa da 0 giorni/)).toBeTruthy();
+  });
+
+  test('mostra la versione installata, per capire se il deploy e arrivato', async () => {
+    const utente = userEvent.setup();
+    render(<App />);
+    await screen.findByText('Ciao Paolo.');
+    await utente.click(screen.getByRole('button', { name: 'Impostazioni' }));
+
+    expect(await screen.findByText(new RegExp(`Versione ${VERSIONE}`))).toBeTruthy();
   });
 
   test('riprendere il piano chiude la pausa', async () => {

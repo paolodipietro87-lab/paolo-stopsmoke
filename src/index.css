@@ -263,3 +263,17 @@ h2 {
     transition: none;
   }
 }
+
+.banner-aggiornamento {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3) calc(var(--sp-2) + env(safe-area-inset-top));
+  background: var(--superficie);
+  border-bottom: 1px solid var(--ambra);
+  color: var(--testo);
+}
