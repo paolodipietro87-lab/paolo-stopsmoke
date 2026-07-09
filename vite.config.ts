@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // Su GitHub Pages l'app vive sotto /<repo>/: base configurabile senza toccare il codice.
-const base = process.env.BASE_PATH ?? '/smoke-timer/';
+const base = process.env.BASE_PATH ?? '/paolo-stopsmoke/';
 
 export default defineConfig({
   base,

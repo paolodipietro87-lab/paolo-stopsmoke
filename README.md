@@ -1,32 +1,45 @@
-# React + TypeScript + Vite
+# Smoke Timer
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+PWA per smettere di fumare tramite riduzione graduale. Un timer stabilisce quando puoi
+fumare la prossima sigaretta; l'intervallo cresce ogni giorno fino allo zero.
 
-Currently, two official plugins are available:
+Tutto in locale (IndexedDB), nessun backend, nessun tracciamento.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Come funziona
 
-## React Compiler
+- **Timer continuo 24h.** Intervallo iniziale = `1440 / sigarette al giorno`, +N minuti ogni giorno.
+- **Credito (max 2).** Il primo intervallo dopo una sigaretta e il countdown normale; ogni
+  intervallo pieno successivo matura 1 credito. Di notte (00:00–07:00, configurabile) il
+  credito non matura, e a mezzanotte viene tagliato a 1.
+- **Sgarro** = sigaretta prima della scadenza, senza credito. Tre penalita cumulative:
+  1. i minuti rubati si sommano a un debito che maggiora i timer successivi;
+  2. il giorno dopo la progressione non cresce;
+  3. multa pari al costo di 2 sigarette, da versare davvero nel salvadanaio.
+- **Salvadanaio reale assistito.** "Versa ora" copia l'importo e apre l'app della banca
+  (di default Poste Italiane). L'app non muove denaro: il versamento lo autorizzi tu.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Ogni valore deriva dai timestamp persistiti: chiudere l'app o restare offline non altera nulla.
 
-## Expanding the Oxlint configuration
+## Sviluppo
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev      # http://localhost:5173/paolo-stopsmoke/
+npm test         # 130 test: motore, dati, flussi in jsdom
+npm run build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Le icone PWA si rigenerano con `node scripts/genera-icone.mjs`.
+
+## Deploy
+
+Push su `main` → GitHub Actions esegue test e build e pubblica su GitHub Pages.
+`BASE_PATH` viene ricavato dal nome del repository.
+
+## Struttura
+
+| Percorso | Contenuto |
+|---|---|
+| `src/core/` | Motore puro e testato: intervalli, credito, sgarri, statistiche, messaggi |
+| `src/data/` | Dexie/IndexedDB, azioni, backup JSON |
+| `src/ui/` | Componenti React, dark mode, anello countdown |
