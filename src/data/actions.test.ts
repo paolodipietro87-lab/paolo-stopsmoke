@@ -66,4 +66,25 @@ describe('annullaFumata', () => {
     await annullaFumata(r.id);
     expect(await db.smokes.count()).toBe(0);
   });
+
+  test('una multa gia versata sopravvive alla cancellazione della sigaretta', async () => {
+    await fuma(d('2026-07-09T08:00'), cfg);
+    const r = await fuma(d('2026-07-09T08:38'), cfg);
+    const multa = (await db.penalties.toArray())[0];
+    await db.penalties.update(multa.id!, {
+      stato: 'versata',
+      dataVersamento: d('2026-07-09T09:00'),
+    });
+
+    await annullaFumata(r.id);
+
+    expect(await db.smokes.count()).toBe(1);
+    const rimaste = await db.penalties.toArray();
+    expect(rimaste).toHaveLength(1);
+    expect(rimaste[0].stato).toBe('versata');
+    expect(rimaste[0].importo).toBeCloseTo(0.55);
+    // scollegata: la sigaretta non esiste piu, il denaro versato si
+    expect(rimaste[0].sigarettaId).toBeUndefined();
+    expect(rimaste[0].motivo).toContain('sigaretta cancellata');
+  });
 });

@@ -31,10 +31,26 @@ export async function fuma(timestamp: number, cfg: ConfigPiano): Promise<EsitoFu
   });
 }
 
-/** Undo entro 10 secondi, o cancellazione dallo storico. */
+/**
+ * Undo entro 10 secondi, o cancellazione dallo storico.
+ *
+ * Le multe gia versate non si cancellano: quei soldi sono sul salvadanaio reale
+ * e l'app non puo stornarli. Restano nello storico, scollegate dalla sigaretta.
+ */
 export async function annullaFumata(id: number): Promise<void> {
   await db.transaction('rw', db.smokes, db.penalties, async () => {
     await db.smokes.delete(id);
-    await db.penalties.where('sigarettaId').equals(id).delete();
+
+    const collegate = await db.penalties.where('sigarettaId').equals(id).toArray();
+    for (const multa of collegate) {
+      if (multa.stato === 'versata') {
+        await db.penalties.update(multa.id!, {
+          sigarettaId: undefined,
+          motivo: `${multa.motivo} (sigaretta cancellata, importo gia versato)`,
+        });
+      } else {
+        await db.penalties.delete(multa.id!);
+      }
+    }
   });
 }
