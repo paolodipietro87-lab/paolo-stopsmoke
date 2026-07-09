@@ -1,0 +1,265 @@
+:root {
+  color-scheme: dark;
+
+  --fondo: #0e1116;
+  --superficie: #161b22;
+  --bordo: #262c36;
+  --testo: #e6edf3;
+  --testo-debole: #8b949e;
+
+  --ambra: #d9a441;
+  --verde: #3fb950;
+  --rosso: #da3633;
+
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-6: 1.5rem;
+
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--fondo);
+  color: var(--testo);
+}
+
+#root {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: var(--sp-4) var(--sp-4) 5rem;
+}
+
+.navigazione {
+  position: fixed;
+  inset: auto 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-2) calc(var(--sp-2) + env(safe-area-inset-bottom));
+  background: var(--superficie);
+  border-top: 1px solid var(--bordo);
+}
+
+.navigazione__voce {
+  flex: 1;
+  max-width: 10rem;
+  padding: var(--sp-2);
+  font-size: 0.8125rem;
+  color: var(--testo-debole);
+  background: transparent;
+  border: 0;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.navigazione__voce--attiva {
+  color: var(--testo);
+  background: var(--fondo);
+}
+
+.navigazione__voce:focus-visible {
+  outline: 2px solid var(--ambra);
+}
+
+ul {
+  padding-left: 1.1rem;
+  line-height: 1.7;
+  font-size: 0.9375rem;
+  color: var(--testo-debole);
+}
+
+h1,
+h2 {
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.saluto {
+  font-size: 1.5rem;
+  font-weight: 300;
+}
+
+.sottotitolo {
+  color: var(--testo-debole);
+  font-size: 0.9375rem;
+  margin: var(--sp-2) 0 0;
+  min-height: 1.4em;
+}
+
+/* Anello countdown: unico elemento decorativo dell'app. */
+.anello {
+  display: block;
+  margin: var(--sp-6) auto var(--sp-4);
+  width: min(17rem, 72vw);
+  height: auto;
+}
+
+.anello__traccia {
+  fill: none;
+  stroke: var(--bordo);
+  stroke-width: 6;
+}
+
+.anello__progresso {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 0.6s linear, stroke 0.4s ease;
+}
+
+.anello__tempo {
+  font-size: 2.25rem;
+  font-weight: 200;
+  fill: var(--testo);
+  font-variant-numeric: tabular-nums;
+}
+
+.anello__etichetta {
+  font-size: 0.5rem;
+  fill: var(--testo-debole);
+  letter-spacing: 0.14em;
+}
+
+.anello__credito {
+  fill: var(--verde);
+}
+
+.anello__credito--vuoto {
+  fill: var(--bordo);
+}
+
+.pulsante-primario {
+  display: block;
+  width: 100%;
+  padding: var(--sp-4);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--fondo);
+  background: var(--testo);
+  border: 0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.pulsante-primario:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pulsante-primario:focus-visible,
+.pulsante-secondario:focus-visible {
+  outline: 2px solid var(--ambra);
+  outline-offset: 2px;
+}
+
+.pulsante-secondario {
+  padding: var(--sp-2) var(--sp-3);
+  font-size: 0.875rem;
+  color: var(--testo);
+  background: transparent;
+  border: 1px solid var(--bordo);
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.griglia {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-3);
+  margin-top: var(--sp-6);
+}
+
+.scheda {
+  padding: var(--sp-3);
+  background: var(--superficie);
+  border: 1px solid var(--bordo);
+  border-radius: 0.5rem;
+}
+
+.scheda__etichetta {
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--testo-debole);
+}
+
+.scheda__valore {
+  font-size: 1.375rem;
+  margin-top: var(--sp-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.scheda--allarme {
+  border-color: var(--rosso);
+}
+
+.scheda--allarme .scheda__valore {
+  color: var(--rosso);
+}
+
+.barra-undo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+  padding: var(--sp-3);
+  background: var(--superficie);
+  border: 1px solid var(--ambra);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.campo {
+  display: block;
+  margin-bottom: var(--sp-4);
+}
+
+.campo__etichetta {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--testo-debole);
+  margin-bottom: var(--sp-2);
+}
+
+.campo__input {
+  width: 100%;
+  padding: var(--sp-3);
+  font-size: 1rem;
+  color: var(--testo);
+  background: var(--superficie);
+  border: 1px solid var(--bordo);
+  border-radius: 0.375rem;
+}
+
+.campo__input:focus-visible {
+  outline: 2px solid var(--ambra);
+}
+
+.riepilogo {
+  padding: var(--sp-4);
+  background: var(--superficie);
+  border-left: 2px solid var(--ambra);
+  border-radius: 0 0.375rem 0.375rem 0;
+  line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anello__progresso {
+    transition: none;
+  }
+}
