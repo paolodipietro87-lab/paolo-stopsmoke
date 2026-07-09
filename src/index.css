@@ -211,6 +211,30 @@ h2 {
   color: var(--rosso);
 }
 
+/* Occupa una cella della griglia come una scheda, ma urla. */
+.pulsante-sos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: var(--rosso);
+  border-color: var(--rosso);
+  color: #fff;
+  font-family: inherit;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.pulsante-sos:active {
+  filter: brightness(0.85);
+}
+
+.riepilogo--sos {
+  margin-top: var(--sp-4);
+  border-left-color: var(--rosso);
+}
+
 .barra-undo {
   display: flex;
   align-items: center;

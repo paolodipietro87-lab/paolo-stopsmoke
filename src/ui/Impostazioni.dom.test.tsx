@@ -2,9 +2,9 @@
 import 'fake-indexeddb/auto';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import App from '../App';
-import { db } from '../data/db';
+import { db, leggiProfilo } from '../data/db';
 import { pausaAttiva } from '../data/pauseActions';
 import { VERSIONE } from '../version';
 
@@ -23,6 +23,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   cleanup();
+  vi.unstubAllGlobals();
   await db.close();
 });
 
@@ -56,6 +57,35 @@ describe('Impostazioni', () => {
     await utente.click(screen.getByRole('button', { name: 'Impostazioni' }));
 
     expect(await screen.findByText(new RegExp(`Versione ${VERSIONE}`))).toBeTruthy();
+  });
+
+  test('attivare le notifiche chiede il permesso e lo salva nel profilo', async () => {
+    const richiesta = vi.fn().mockResolvedValue('granted');
+    vi.stubGlobal('Notification', { permission: 'default', requestPermission: richiesta });
+
+    const utente = userEvent.setup();
+    render(<App />);
+    await screen.findByText('Ciao Paolo.');
+    await utente.click(screen.getByRole('button', { name: 'Impostazioni' }));
+
+    await utente.click(await screen.findByRole('button', { name: 'Attiva le notifiche' }));
+
+    expect(richiesta).toHaveBeenCalled();
+    await waitFor(async () => expect((await leggiProfilo())?.notifiche).toBe(true));
+  });
+
+  test('permesso negato dal browser: niente notifiche, lo dice chiaro', async () => {
+    vi.stubGlobal('Notification', { permission: 'denied', requestPermission: vi.fn() });
+
+    const utente = userEvent.setup();
+    render(<App />);
+    await screen.findByText('Ciao Paolo.');
+    await utente.click(screen.getByRole('button', { name: 'Impostazioni' }));
+
+    await utente.click(await screen.findByRole('button', { name: 'Attiva le notifiche' }));
+
+    expect(await screen.findByText(/negato/i)).toBeTruthy();
+    expect((await leggiProfilo())?.notifiche).not.toBe(true);
   });
 
   test('riprendere il piano chiude la pausa', async () => {

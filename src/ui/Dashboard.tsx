@@ -5,6 +5,7 @@ import { annullaFumata, fuma } from '../data/actions';
 import { salvaProfilo } from '../data/db';
 import { Anello } from './Anello';
 import { formattaEuro } from './format';
+import { useNotificaTimer } from './useNotificaTimer';
 import { usePiano } from './usePiano';
 
 const SECONDI_UNDO = 10;
@@ -14,6 +15,8 @@ export function Dashboard() {
   const [ultimaId, setUltimaId] = useState<number | null>(null);
   const [secondiUndo, setSecondiUndo] = useState(0);
   const [feedback, setFeedback] = useState('');
+  const [sos, setSos] = useState('');
+  useNotificaTimer(v.prossima?.scadenza ?? null, v.profilo?.notifiche === true);
 
   useEffect(() => {
     if (secondiUndo <= 0) return;
@@ -58,6 +61,13 @@ export function Dashboard() {
 
   const puoPassareAMantenimento = !profilo.mantenimento && intervalloOggi > 1440 && v.oreSmokeFree >= 24;
 
+  function craving() {
+    setSos(
+      `${messaggio('milestone', Date.now())} ${Math.floor(v.oreSmokeFree)} ore pulite. ` +
+        `${formattaEuro(v.risparmioEuro)} risparmiati. Una sigaretta ora butta via tutto questo.`,
+    );
+  }
+
   async function annulla() {
     if (ultimaId === null) return;
     await annullaFumata(ultimaId);
@@ -74,13 +84,16 @@ export function Dashboard() {
         <div className="griglia">
           <Scheda etichetta="Ore pulite" valore={String(Math.floor(v.oreSmokeFree))} />
           <Scheda etichetta="Giorni puliti" valore={String(Math.floor(v.oreSmokeFree / 24))} />
-          <Scheda etichetta="Risparmiati" valore={formattaEuro(v.risparmioEuro)} />
+          <button className="scheda pulsante-sos" onClick={craving}>
+            SOS
+          </button>
           <Scheda
             etichetta="Multe da versare"
             valore={formattaEuro(v.multeDaVersareEuro)}
             allarme={v.multeDaVersareEuro > 0}
           />
         </div>
+        {sos && <div className="riepilogo riepilogo--sos">{sos}</div>}
         <br />
         <button className="pulsante-secondario" onClick={haFumato}>
           Ho avuto una ricaduta
@@ -138,7 +151,9 @@ export function Dashboard() {
         <Scheda etichetta="Sgarri oggi" valore={String(v.sgarriOggi)} allarme={v.sgarriOggi > 0} />
         <Scheda etichetta="Streak pulita" valore={`${v.streak} gg`} />
         <Scheda etichetta="Intervallo" valore={`${intervalloOggi} min`} />
-        <Scheda etichetta="Risparmiati" valore={formattaEuro(v.risparmioEuro)} />
+        <button className="scheda pulsante-sos" onClick={craving}>
+          SOS
+        </button>
         <Scheda
           etichetta="Multe da versare"
           valore={formattaEuro(v.multeDaVersareEuro)}
@@ -147,6 +162,8 @@ export function Dashboard() {
         <Scheda etichetta="Scorta" valore={`${v.scorta} sig.`} />
         <Scheda etichetta="Credito" valore={`${prossima.credito} / 2`} />
       </div>
+
+      {sos && <div className="riepilogo riepilogo--sos">{sos}</div>}
     </main>
   );
 }

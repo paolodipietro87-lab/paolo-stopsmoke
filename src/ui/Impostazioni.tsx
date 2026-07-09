@@ -8,6 +8,7 @@ import { iniziaPausa, terminaPausa } from '../data/pauseActions';
 import { esportaJson, importaJson } from '../data/backup';
 import { caricaBackup, driveConfigurato, scaricaBackup } from '../data/drive';
 import { CLIENT_ID, chiediToken } from '../data/googleAuth';
+import { chiediPermessoNotifiche } from './useNotificaTimer';
 import { VERSIONE } from '../version';
 
 export function Impostazioni() {
@@ -35,6 +36,16 @@ export function Impostazioni() {
     } catch (e) {
       setErrore(e instanceof Error ? e.message : 'Errore');
     }
+  }
+
+  async function commutaNotifiche() {
+    setErrore('');
+    if (profilo?.notifiche) {
+      await aggiorna({ notifiche: false });
+      return;
+    }
+    if (await chiediPermessoNotifiche()) await aggiorna({ notifiche: true });
+    else setErrore('Permesso negato dal browser. Sbloccalo dalle impostazioni del sito.');
   }
 
   async function esporta() {
@@ -159,6 +170,16 @@ export function Impostazioni() {
           onChange={(e) => aggiorna({ linkBanca: e.target.value })}
         />
       </label>
+
+      <h2>Notifiche</h2>
+      <p className="sottotitolo">
+        {profilo.notifiche
+          ? 'Avviso alla scadenza del timer. Se il telefono chiude l app puo saltare: il countdown resta la verita.'
+          : 'Un avviso quando il timer scade. Nessun server, nessun tracciamento.'}
+      </p>
+      <button className="pulsante-secondario" onClick={commutaNotifiche}>
+        {profilo.notifiche ? 'Disattiva le notifiche' : 'Attiva le notifiche'}
+      </button>
 
       <h2>Pausa del piano</h2>
       <p className="sottotitolo">

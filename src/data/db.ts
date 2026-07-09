@@ -16,6 +16,8 @@ export interface Profilo {
   /** Deep link dell'app bancaria per il salvadanaio. */
   linkBanca?: string;
   mantenimento?: boolean;
+  /** Notifica locale alla scadenza del timer. Best effort: nessun push server. */
+  notifiche?: boolean;
 }
 
 export interface Sigaretta {
