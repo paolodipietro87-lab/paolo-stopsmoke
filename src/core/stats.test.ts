@@ -53,22 +53,34 @@ describe('prossimaSigaretta', () => {
     const stato = valutaSigarette([d('2026-07-09T08:00')], cfg);
     const p = prossimaSigaretta(stato, cfg, d('2026-07-09T08:30'));
     expect(p.puoiFumare).toBe(false);
-    expect(p.minutiMancanti).toBe(30);
+    expect(p.secondiMancanti).toBe(30 * 60);
     expect(p.scadenza).toBe(d('2026-07-09T09:00'));
+  });
+
+  test('il countdown scala al secondo, non al minuto', () => {
+    const stato = valutaSigarette([d('2026-07-09T08:00')], cfg);
+    const p = prossimaSigaretta(stato, cfg, d('2026-07-09T08:30') + 25_000);
+    expect(p.secondiMancanti).toBe(29 * 60 + 35);
+  });
+
+  test('i millisecondi non fanno sparire un secondo intero', () => {
+    const stato = valutaSigarette([d('2026-07-09T08:00')], cfg);
+    const p = prossimaSigaretta(stato, cfg, d('2026-07-09T08:59:59') + 500);
+    expect(p.secondiMancanti).toBe(1);
   });
 
   test('a countdown scaduto si puo fumare', () => {
     const stato = valutaSigarette([d('2026-07-09T08:00')], cfg);
     const p = prossimaSigaretta(stato, cfg, d('2026-07-09T09:10'));
     expect(p.puoiFumare).toBe(true);
-    expect(p.minutiMancanti).toBe(0);
+    expect(p.secondiMancanti).toBe(0);
   });
 
   test('il debito da sgarro maggiora la scadenza', () => {
     const stato = valutaSigarette([d('2026-07-09T08:00'), d('2026-07-09T08:38')], cfg);
     const p = prossimaSigaretta(stato, cfg, d('2026-07-09T09:00'));
     expect(p.scadenza).toBe(d('2026-07-09T10:00')); // 08:38 + 60 + 22
-    expect(p.minutiMancanti).toBe(60);
+    expect(p.secondiMancanti).toBe(60 * 60);
   });
 
   test('col credito si puo fumare anche prima della scadenza', () => {

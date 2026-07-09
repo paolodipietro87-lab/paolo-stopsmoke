@@ -31,8 +31,8 @@ export function Dashboard() {
     cfg.incrementoGiornalieroMin,
     stato.giorniCongelati,
   );
-  const secondiMancanti = prossima.minutiMancanti * 60;
-  const progresso = prossima.scadenza === null ? 1 : 1 - prossima.minutiMancanti / intervalloOggi;
+  const secondiMancanti = prossima.secondiMancanti;
+  const progresso = prossima.scadenza === null ? 1 : 1 - secondiMancanti / (intervalloOggi * 60);
   const targetOggi = Math.max(0, Math.floor(1440 / intervalloOggi));
 
   async function haFumato() {

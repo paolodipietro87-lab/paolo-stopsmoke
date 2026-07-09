@@ -18,7 +18,8 @@ export function giorniAZero(intervalloBaseMin: number, incrementoGiornalieroMin:
 export interface ProssimaSigaretta {
   /** null quando non c'e ancora nessuna sigaretta registrata. */
   scadenza: number | null;
-  minutiMancanti: number;
+  /** Arrotondati per eccesso: il countdown mostra 1 finche l'ultimo secondo non e finito. */
+  secondiMancanti: number;
   credito: number;
   puoiFumare: boolean;
 }
@@ -26,7 +27,7 @@ export interface ProssimaSigaretta {
 /** Stato del countdown all'istante `ora`, derivato dai soli timestamp persistiti. */
 export function prossimaSigaretta(stato: StatoPiano, cfg: ConfigPiano, ora: number): ProssimaSigaretta {
   if (stato.riferimentoTimer === null) {
-    return { scadenza: null, minutiMancanti: 0, credito: 0, puoiFumare: true };
+    return { scadenza: null, secondiMancanti: 0, credito: 0, puoiFumare: true };
   }
 
   const giorno = giornoDiPiano(ora, cfg.inizioPiano);
@@ -44,9 +45,9 @@ export function prossimaSigaretta(stato: StatoPiano, cfg: ConfigPiano, ora: numb
   );
 
   const scadenza = stato.riferimentoTimer + (intervallo + stato.debitoResiduoMin) * MIN;
-  const minutiMancanti = Math.max(0, Math.ceil((scadenza - ora) / MIN));
+  const secondiMancanti = Math.max(0, Math.ceil((scadenza - ora) / 1000));
 
-  return { scadenza, minutiMancanti, credito, puoiFumare: credito > 0 || ora >= scadenza };
+  return { scadenza, secondiMancanti, credito, puoiFumare: credito > 0 || ora >= scadenza };
 }
 
 /** Giorni consecutivi senza sgarri fino a `giornoCorrente` incluso. */
