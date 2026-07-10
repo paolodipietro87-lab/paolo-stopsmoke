@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { scenarioSos, type StatoSos } from './sos';
+import { FRASI_SOS, fraseSos, scenarioSos, type StatoSos } from './sos';
 
-const BASE: StatoSos = {
+export const BASE: StatoSos = {
   mantenimento: false,
   secondiMancanti: 3600,
   puoiFumare: false,
@@ -45,5 +45,68 @@ describe('scenarioSos', () => {
 
   test('incoraggiamento come fallback', () => {
     expect(scenarioSos(BASE)).toBe('incoraggiamento');
+  });
+});
+
+describe('FRASI_SOS', () => {
+  const scenari = [
+    'mantenimento',
+    'quasi',
+    'rimprovero',
+    'contabile',
+    'orgoglio',
+    'incoraggiamento',
+  ] as const;
+
+  test('ogni scenario ha 25 frasi', () => {
+    for (const s of scenari) expect(FRASI_SOS[s]).toHaveLength(25);
+  });
+
+  test('nessuna frase duplicata dentro uno scenario', () => {
+    for (const s of scenari) expect(new Set(FRASI_SOS[s]).size).toBe(25);
+  });
+
+  test('nessuna lettera accentata, come nel resto dei messaggi', () => {
+    for (const s of scenari) {
+      for (const f of FRASI_SOS[s]) expect(f).not.toMatch(/[àèéìòù]/);
+    }
+  });
+});
+
+describe('fraseSos', () => {
+  test('e deterministica sul seed', () => {
+    expect(fraseSos(BASE, 7)).toBe(fraseSos(BASE, 7));
+  });
+
+  test('seed diversi pescano frasi diverse', () => {
+    const frasi = new Set([0, 1, 2, 3, 4].map((i) => fraseSos(BASE, i)));
+    expect(frasi.size).toBeGreaterThan(1);
+  });
+
+  test('pesca dallo scenario giusto', () => {
+    const f = fraseSos({ ...BASE, sgarriOggi: 1 }, 0);
+    expect(FRASI_SOS.rimprovero).toContain(f);
+  });
+
+  test('risolve ogni segnaposto: nessuna graffa sopravvive', () => {
+    const stati: StatoSos[] = [
+      { ...BASE, mantenimento: true },
+      { ...BASE, secondiMancanti: 540 },
+      { ...BASE, sgarriOggi: 2 },
+      { ...BASE, multeDaVersareEuro: 4.4 },
+      { ...BASE, streak: 5 },
+      BASE,
+    ];
+    for (const s of stati) {
+      for (let seed = 0; seed < 25; seed++) {
+        expect(fraseSos(s, seed)).not.toMatch(/[{}]/);
+      }
+    }
+  });
+
+  test('i numeri finiscono davvero nella frase', () => {
+    const f = fraseSos({ ...BASE, secondiMancanti: 540 }, 0);
+    // 540 s arrotondati per eccesso: 9 minuti.
+    expect(FRASI_SOS.quasi[0].replace('{minuti}', '9')).toBe(f);
   });
 });
