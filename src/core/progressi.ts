@@ -1,6 +1,6 @@
 import { giornoDiPiano, type ConfigPiano, type StatoPiano } from './engine';
 import { SOGLIA_SGARRO_PESANTE_MIN } from './messages';
-import { chiaveGiorno } from './storico';
+import { chiaveGiorno, giornoPrecedente } from './storico';
 
 /** Sigarette consecutive senza sgarro, contate dall'ultima all'indietro. */
 export function timerRispettatiDiFila(stato: StatoPiano): number {
@@ -19,8 +19,8 @@ const oraDi = (t: number) => new Date(t).getHours();
  * Il vincolo sui due giorni evita di premiare le notti precedenti al piano.
  */
 export function notteIntera(stato: StatoPiano, cfg: ConfigPiano): boolean {
-  const giorni = [...new Set(stato.sigarette.map((s) => chiaveGiorno(s.timestamp)))].sort();
-  if (giorni.length < 2) return false;
+  const giorniFumati = new Set(stato.sigarette.map((s) => chiaveGiorno(s.timestamp)));
+  if (giorniFumati.size < 2) return false;
 
   const dentroLaNotte = (t: number) => {
     const h = oraDi(t);
@@ -28,11 +28,14 @@ export function notteIntera(stato: StatoPiano, cfg: ConfigPiano): boolean {
   };
 
   // Una notte "appartiene" al giorno in cui finisce: quella del 2 luglio va da
-  // mezzanotte del 2 alle 7 del 2. Basta che uno dei giorni successivi al primo
-  // non abbia sigarette nella propria finestra notturna.
-  return giorni
-    .slice(1)
-    .some((g) => !stato.sigarette.some((s) => chiaveGiorno(s.timestamp) === g && dentroLaNotte(s.timestamp)));
+  // mezzanotte del 2 alle 7 del 2. Il giorno precedente a g deve essere anch'esso
+  // un giorno fumato: solo cosi la notte e davvero "attraversata" fra due giorni
+  // consecutivi in cui si e fumato, ed esclude i buchi di tracciamento.
+  return [...giorniFumati].some(
+    (g) =>
+      giorniFumati.has(giornoPrecedente(g)) &&
+      !stato.sigarette.some((s) => chiaveGiorno(s.timestamp) === g && dentroLaNotte(s.timestamp)),
+  );
 }
 
 /** Giorni consecutivi senza sgarri dall ultimo sgarro pesante a oggi. Zero se non ce n e mai stato uno. */

@@ -63,6 +63,14 @@ describe('notteIntera', () => {
     const stato = valutaSigarette([t('2026-07-01T22:00:00')], CFG);
     expect(notteIntera(stato, CFG)).toBe(false);
   });
+
+  test('falsa se fra i due giorni fumati c e un buco di tracciamento', () => {
+    // 1 luglio e 10 luglio: nessuna sigaretta nei giorni intermedi, quindi il
+    // 10 non e adiacente al giorno fumato precedente e non conta come notte
+    // "attraversata senza fumare fra due giorni consecutivi fumati".
+    const stato = valutaSigarette([t('2026-07-01T22:00:00'), t('2026-07-10T08:00:00')], CFG);
+    expect(notteIntera(stato, CFG)).toBe(false);
+  });
 });
 
 describe('giorniPulitiDopoSgarroPesante', () => {
