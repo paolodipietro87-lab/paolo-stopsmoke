@@ -1,5 +1,6 @@
 import type { SigarettaValutata } from './engine';
 import { CREDITO_MAX } from './credit';
+import { giornoSuccessivo } from './storico';
 
 export type EsitoObiettivo = 'in-corso' | 'riuscito' | 'fallito';
 
@@ -10,6 +11,8 @@ export interface StatoGiorno {
   credito: number;
   /** Ora locale in cui finisce la finestra notturna: `cfg.notte.fineOra`. */
   fineNotteOra: number;
+  /** Chiave YYYY-MM-DD del giorno che questo stato descrive (formato di `chiaveGiorno`). */
+  giorno: string;
 }
 
 export interface Obiettivo {
@@ -21,14 +24,15 @@ export interface Obiettivo {
 const oraDi = (t: number) => new Date(t).getHours();
 
 /**
- * La giornata e finita esattamente al passaggio di mezzanotte. `StatoGiorno`
- * non porta con se la data del giorno valutato (solo le sue sigarette), quindi
- * l'unico riferimento affidabile e l'orario di `ora` stesso: se e mezzanotte
- * in punto, il giorno e chiuso.
+ * La giornata di `g.giorno` e finita quando `ora` raggiunge o supera la
+ * mezzanotte che segue `g.giorno`. Calcolata dal giorno successivo (non da
+ * `ora` stessa) cosi resta corretta a qualunque orario del giorno dopo, non
+ * solo esattamente a mezzanotte, e attorno al cambio di ora legale.
  */
-function giornoFinito(_g: StatoGiorno, ora: number): boolean {
-  const d = new Date(ora);
-  return d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0 && d.getMilliseconds() === 0;
+function giornoFinito(g: StatoGiorno, ora: number): boolean {
+  const [a, m, gg] = giornoSuccessivo(g.giorno).split('-').map(Number);
+  const mezzanotteSuccessiva = new Date(a, m - 1, gg, 0, 0, 0, 0).getTime();
+  return ora >= mezzanotteSuccessiva;
 }
 
 /**

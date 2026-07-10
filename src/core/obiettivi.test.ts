@@ -15,7 +15,7 @@ function sig(iso: string, extra: Partial<SigarettaValutata> = {}): SigarettaValu
 }
 
 function stato(p: Partial<StatoGiorno> = {}): StatoGiorno {
-  return { sigarette: [], targetOggi: 10, credito: 0, fineNotteOra: 7, ...p };
+  return { sigarette: [], targetOggi: 10, credito: 0, fineNotteOra: 7, giorno: '2026-07-10', ...p };
 }
 
 const ORA_MATTINA = new Date('2026-07-10T09:00:00').getTime();
@@ -193,6 +193,17 @@ describe('prima-ora-sveglio-pulita', () => {
   test('in corso dentro la finestra', () => {
     const presto = new Date('2026-07-10T07:20:00').getTime();
     expect(esitoDi(id, stato(), presto)).toBe('in-corso');
+  });
+});
+
+describe('regressione: giornoFinito non dipende dal millisecondo esatto', () => {
+  test('daDifendere non violato e riuscito a qualunque ora del giorno dopo', () => {
+    const orarioQualunque = new Date('2026-07-11T09:37:14.123').getTime();
+    expect(esitoDi('giornata-senza-sgarri', stato(), orarioQualunque)).toBe('riuscito');
+  });
+  test('daConquistare non raggiunto e fallito a qualunque ora del giorno dopo', () => {
+    const orarioQualunque = new Date('2026-07-11T09:37:14.123').getTime();
+    expect(esitoDi('matura-un-credito', stato(), orarioQualunque)).toBe('fallito');
   });
 });
 
