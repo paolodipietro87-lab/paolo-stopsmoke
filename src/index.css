@@ -301,3 +301,11 @@ h2 {
   border-bottom: 1px solid var(--ambra);
   color: var(--testo);
 }
+
+.navigatore-giorno {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
