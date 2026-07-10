@@ -1,6 +1,6 @@
 import type { SigarettaValutata } from './engine';
 import { CREDITO_MAX } from './credit';
-import { giornoSuccessivo } from './storico';
+import { chiaveGiorno, giornoSuccessivo } from './storico';
 
 export type EsitoObiettivo = 'in-corso' | 'riuscito' | 'fallito';
 
@@ -57,11 +57,19 @@ function daConquistare(raggiunto: (g: StatoGiorno) => boolean): Obiettivo['esito
   };
 }
 
-/** Obiettivo con una scadenza intraday: superata l'ora limite senza violazioni, e vinto. */
+/**
+ * Obiettivo con una scadenza intraday: superata l'ora limite senza violazioni, e vinto.
+ * L'ora limite va confrontata col giorno a cui `ora` appartiene, non solo con
+ * l'orologio: valutato nella notte del giorno successivo (o oltre) la giornata
+ * di `g.giorno` e comunque chiusa e va dichiarata riuscita; valutato in un
+ * giorno precedente a `g.giorno` resta invece in corso.
+ */
 function entroLOra(oraLimite: (g: StatoGiorno) => number, violato: (g: StatoGiorno) => boolean): Obiettivo['esito'] {
   return (g, ora) => {
     if (violato(g)) return 'fallito';
-    return oraDi(ora) >= oraLimite(g) ? 'riuscito' : 'in-corso';
+    if (giornoFinito(g, ora)) return 'riuscito';
+    const stessoGiorno = chiaveGiorno(ora) === g.giorno;
+    return stessoGiorno && oraDi(ora) >= oraLimite(g) ? 'riuscito' : 'in-corso';
   };
 }
 

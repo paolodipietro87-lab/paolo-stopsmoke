@@ -108,7 +108,7 @@ describe('matura-un-credito', () => {
 
 describe('sotto-il-target', () => {
   const id = 'sotto-il-target';
-  test('fallito appena si supera il target', () => {
+  test('fallito raggiunto il target (non serve superarlo)', () => {
     const g = stato({ targetOggi: 2, sigarette: [sig('2026-07-10T08:00:00'), sig('2026-07-10T09:00:00')] });
     expect(esitoDi(id, g, ORA_MATTINA)).toBe('fallito');
   });
@@ -153,7 +153,7 @@ describe('niente-fumo-dopo-le-22', () => {
 
 describe('meta-del-target', () => {
   const id = 'meta-del-target';
-  test('fallito superata la meta del target', () => {
+  test('fallito raggiunta la meta del target (non serve superarla)', () => {
     const g = stato({ targetOggi: 4, sigarette: [sig('2026-07-10T08:00:00'), sig('2026-07-10T09:00:00')] });
     expect(esitoDi(id, g, ORA_MATTINA)).toBe('fallito');
   });
@@ -193,6 +193,50 @@ describe('prima-ora-sveglio-pulita', () => {
   test('in corso dentro la finestra', () => {
     const presto = new Date('2026-07-10T07:20:00').getTime();
     expect(esitoDi(id, stato(), presto)).toBe('in-corso');
+  });
+});
+
+describe('regressione: entroLOra non dipende solo dall ora dell orologio', () => {
+  test('niente-sgarri-mattina: non violato, riuscito alle 3 del giorno dopo', () => {
+    const treDiNotte = new Date('2026-07-11T03:00:00').getTime();
+    expect(esitoDi('niente-sgarri-mattina', stato(), treDiNotte)).toBe('riuscito');
+  });
+  test('niente-sgarri-mattina: non violato, in corso prima di mezzogiorno stesso giorno', () => {
+    const primaDiMezzogiorno = new Date('2026-07-10T10:00:00').getTime();
+    expect(esitoDi('niente-sgarri-mattina', stato(), primaDiMezzogiorno)).toBe('in-corso');
+  });
+  test('niente-sgarri-mattina: violato, fallito valutato il giorno dopo', () => {
+    const g = stato({ sigarette: [sig('2026-07-10T10:00:00', { sgarro: true })] });
+    const treDiNotte = new Date('2026-07-11T03:00:00').getTime();
+    expect(esitoDi('niente-sgarri-mattina', g, treDiNotte)).toBe('fallito');
+  });
+
+  test('niente-fumo-prima-delle-nove: non violato, riuscito alle 3 del giorno dopo', () => {
+    const treDiNotte = new Date('2026-07-11T03:00:00').getTime();
+    expect(esitoDi('niente-fumo-prima-delle-nove', stato(), treDiNotte)).toBe('riuscito');
+  });
+  test('niente-fumo-prima-delle-nove: non violato, in corso prima delle 9 stesso giorno', () => {
+    const alba = new Date('2026-07-10T07:30:00').getTime();
+    expect(esitoDi('niente-fumo-prima-delle-nove', stato(), alba)).toBe('in-corso');
+  });
+  test('niente-fumo-prima-delle-nove: violato, fallito valutato il giorno dopo', () => {
+    const g = stato({ sigarette: [sig('2026-07-10T08:00:00')] });
+    const treDiNotte = new Date('2026-07-11T03:00:00').getTime();
+    expect(esitoDi('niente-fumo-prima-delle-nove', g, treDiNotte)).toBe('fallito');
+  });
+
+  test('prima-ora-sveglio-pulita: non violato, riuscito alle 3 del giorno dopo', () => {
+    const treDiNotte = new Date('2026-07-11T03:00:00').getTime();
+    expect(esitoDi('prima-ora-sveglio-pulita', stato(), treDiNotte)).toBe('riuscito');
+  });
+  test('prima-ora-sveglio-pulita: non violato, in corso dentro la finestra stesso giorno', () => {
+    const presto = new Date('2026-07-10T07:20:00').getTime();
+    expect(esitoDi('prima-ora-sveglio-pulita', stato(), presto)).toBe('in-corso');
+  });
+  test('prima-ora-sveglio-pulita: violato, fallito valutato il giorno dopo', () => {
+    const g = stato({ sigarette: [sig('2026-07-10T07:30:00')] });
+    const treDiNotte = new Date('2026-07-11T03:00:00').getTime();
+    expect(esitoDi('prima-ora-sveglio-pulita', g, treDiNotte)).toBe('fallito');
   });
 });
 
