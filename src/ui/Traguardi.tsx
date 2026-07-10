@@ -1,21 +1,27 @@
-import { BADGE } from '../core/badge';
+import { BADGE, ETICHETTA_FAMIGLIA, type FamigliaBadge } from '../core/badge';
 import { TIMELINE_SALUTE, beneficiSbloccati, prossimoBeneficio } from '../core/salute';
 import { usePiano } from './usePiano';
+
+const ORDINE_FAMIGLIE: FamigliaBadge[] = [
+  'streak',
+  'disciplina',
+  'costanza',
+  'riduzione',
+  'resistenza',
+  'notturno',
+  'redenzione',
+  'risparmio',
+  'salvadanaio',
+  'tempo',
+  'mantenimento',
+];
 
 export function Traguardi() {
   const v = usePiano();
 
-  if (v.caricamento || !v.profilo) return null;
+  if (v.caricamento || !v.profilo || !v.datiBadge) return null;
 
-  const dati = {
-    giorniPuliti: v.streak,
-    streakMax: v.streakMax,
-    risparmioEuro: v.risparmioEuro,
-    sigaretteOggi: v.sigaretteOggi,
-    sigaretteAlGiornoIniziali: v.profilo.sigaretteAlGiornoIniziali,
-    oreSmokeFree: v.oreSmokeFree,
-  };
-
+  const dati = v.datiBadge;
   const sbloccati = new Set(BADGE.filter((b) => b.raggiunto(dati)).map((b) => b.id));
   const beneficiOk = new Set(beneficiSbloccati(v.oreSmokeFree).map((b) => b.id));
   const prossimo = prossimoBeneficio(v.oreSmokeFree);
@@ -28,13 +34,26 @@ export function Traguardi() {
       </p>
 
       <h2 style={{ marginTop: '1.5rem' }}>Badge</h2>
-      <ul>
-        {BADGE.map((b) => (
-          <li key={b.id} style={{ color: sbloccati.has(b.id) ? 'var(--testo)' : undefined }}>
-            {sbloccati.has(b.id) ? '✓' : '·'} <strong>{b.titolo}</strong> — {b.descrizione}
-          </li>
-        ))}
-      </ul>
+      <p className="sottotitolo">
+        {sbloccati.size} / {BADGE.length}
+      </p>
+
+      {ORDINE_FAMIGLIE.map((famiglia) => {
+        const delGruppo = BADGE.filter((b) => b.famiglia === famiglia);
+        if (delGruppo.length === 0) return null;
+        return (
+          <section key={famiglia}>
+            <h3>{ETICHETTA_FAMIGLIA[famiglia]}</h3>
+            <ul>
+              {delGruppo.map((b) => (
+                <li key={b.id} style={{ color: sbloccati.has(b.id) ? 'var(--verde)' : undefined }}>
+                  {sbloccati.has(b.id) ? '✓' : '·'} <strong>{b.titolo}</strong> — {b.descrizione}
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
 
       <h2 style={{ marginTop: '1.5rem' }}>Salute</h2>
       <p className="sottotitolo">
