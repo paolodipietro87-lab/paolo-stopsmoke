@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { intervalloGiorno } from '../core/interval';
 import { categoriaSgarro, messaggio } from '../core/messages';
+import { fraseSos } from '../core/sos';
 import { annullaFumata, fuma } from '../data/actions';
 import { salvaProfilo } from '../data/db';
 import { Anello } from './Anello';
@@ -62,9 +63,23 @@ export function Dashboard() {
   const puoPassareAMantenimento = !profilo.mantenimento && intervalloOggi > 1440 && v.oreSmokeFree >= 24;
 
   function craving() {
+    const ora = Date.now();
+    const frase = fraseSos(
+      {
+        mantenimento: v.profilo?.mantenimento === true,
+        secondiMancanti: v.prossima?.secondiMancanti ?? 0,
+        puoiFumare: v.prossima?.puoiFumare ?? true,
+        sgarriOggi: v.sgarriOggi,
+        multeDaVersareEuro: v.multeDaVersareEuro,
+        streak: v.streak,
+        oreSmokeFree: v.oreSmokeFree,
+        risparmioEuro: v.risparmioEuro,
+      },
+      ora,
+    );
     setSos(
-      `${messaggio('milestone', Date.now())} ${Math.floor(v.oreSmokeFree)} ore pulite. ` +
-        `${formattaEuro(v.risparmioEuro)} risparmiati. Una sigaretta ora butta via tutto questo.`,
+      `${frase} ${Math.floor(v.oreSmokeFree)} ore pulite. ` +
+        `${formattaEuro(v.risparmioEuro)} risparmiati.`,
     );
   }
 

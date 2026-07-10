@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import App from '../App';
+import { FRASI_SOS } from '../core/sos';
 import { db } from '../data/db';
 
 const ADESSO = new Date('2026-07-09T12:00:00').getTime();
@@ -74,5 +75,37 @@ describe('SOS in dashboard', () => {
     expect(await screen.findByText(/risparmiati/i)).toBeTruthy();
     expect(screen.getByText(/ore pulite/i)).toBeTruthy();
     expect(await db.smokes.count()).toBe(primaDelClick);
+  });
+});
+
+describe('SOS a scenari', () => {
+  test('con uno sgarro oggi rimprovera, non incoraggia', async () => {
+    // Sigaretta 5 minuti dopo l'ultima: intervallo 72 min, quindi sgarro pesante.
+    await db.smokes.add({ timestamp: ADESSO - 5 * 60_000 });
+
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'SOS' }));
+
+    const testo = (await screen.findByText(/./, { selector: '.riepilogo--sos' })).textContent ?? '';
+    const rimproveri = FRASI_SOS.rimprovero.map((f) => f.split('{')[0]);
+    expect(rimproveri.some((inizio) => testo.includes(inizio))).toBe(true);
+  });
+
+  test('senza sgarri e con timer lontano incoraggia', async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'SOS' }));
+
+    const testo = (await screen.findByText(/./, { selector: '.riepilogo--sos' })).textContent ?? '';
+    const incoraggiamenti = FRASI_SOS.incoraggiamento.map((f) => f.split('{')[0]);
+    expect(incoraggiamenti.some((inizio) => testo.includes(inizio))).toBe(true);
+  });
+
+  test('la coda coi numeri crudi resta', async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'SOS' }));
+
+    const testo = (await screen.findByText(/./, { selector: '.riepilogo--sos' })).textContent ?? '';
+    expect(testo).toContain('ore pulite');
+    expect(testo).toContain('risparmiati');
   });
 });
