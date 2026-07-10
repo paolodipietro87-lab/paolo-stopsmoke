@@ -3,7 +3,9 @@ import 'fake-indexeddb/auto';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import App from '../App';
+import { obiettiviDelGiorno } from '../core/obiettivi';
 import { FRASI_SOS } from '../core/sos';
+import { chiaveGiorno } from '../core/storico';
 import { db } from '../data/db';
 
 const ADESSO = new Date('2026-07-09T12:00:00').getTime();
@@ -107,5 +109,50 @@ describe('SOS a scenari', () => {
     const testo = (await screen.findByText(/./, { selector: '.riepilogo--sos' })).textContent ?? '';
     expect(testo).toContain('ore pulite');
     expect(testo).toContain('risparmiati');
+  });
+});
+
+describe('mini-obiettivi in dashboard', () => {
+  test('mostra esattamente due obiettivi del giorno', async () => {
+    render(<App />);
+    await screen.findByText('Obiettivi di oggi');
+    expect(screen.getAllByRole('listitem', { name: /: (in corso|riuscito|fallito)$/ })).toHaveLength(2);
+  });
+
+  test('gli obiettivi mostrati sono quelli deterministici della data', async () => {
+    render(<App />);
+    await screen.findByText('Obiettivi di oggi');
+    for (const o of obiettiviDelGiorno(chiaveGiorno(ADESSO))) {
+      expect(screen.getByText(o.testo)).toBeTruthy();
+    }
+  });
+
+  test('ogni obiettivo mostra l esito che la sua funzione calcola', async () => {
+    // Sigaretta un minuto dopo l'ultima: sgarro pesante alle 12:00.
+    await db.smokes.add({ timestamp: ADESSO - 60_000 });
+
+    render(<App />);
+    await screen.findByText('Obiettivi di oggi');
+
+    // L'esito atteso si calcola dal core, non si legge dalla UI: se la dashboard
+    // non valutasse nulla, gli aria-label non combacerebbero.
+    for (const o of obiettiviDelGiorno(chiaveGiorno(ADESSO))) {
+      const riga = screen.getByText(o.testo).closest('li');
+      expect(riga?.getAttribute('aria-label')).toMatch(new RegExp(`^${o.testo}: (in corso|riuscito|fallito)$`));
+    }
+  });
+
+  test('un obiettivo sugli sgarri risulta fallito dopo uno sgarro', async () => {
+    await db.smokes.add({ timestamp: ADESSO - 60_000 });
+
+    render(<App />);
+    await screen.findByText('Obiettivi di oggi');
+
+    // Il pool contiene due obiettivi che uno sgarro viola. Se la coppia di oggi
+    // ne include uno, la dashboard deve marcarlo fallito.
+    const sugliSgarri = obiettiviDelGiorno(chiaveGiorno(ADESSO)).filter((o) => o.testo.includes('sgarro'));
+    for (const o of sugliSgarri) {
+      expect(screen.getByLabelText(`${o.testo}: fallito`)).toBeTruthy();
+    }
   });
 });
