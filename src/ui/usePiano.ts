@@ -6,7 +6,13 @@ import { giornoDiPiano, valutaSigarette, type ConfigPiano, type StatoPiano } fro
 import { intervalloBase, intervalloGiorno } from '../core/interval';
 import { FINESTRA_DEFAULT } from '../core/nightWindow';
 import { obiettiviDelGiorno, type StatoGiorno } from '../core/obiettivi';
-import { giorniNelPiano, giorniPulitiDopoSgarroPesante, notteIntera, timerRispettatiDiFila } from '../core/progressi';
+import {
+  giorniNelPiano,
+  giorniPulitiDopoSgarroPesante,
+  mediaSigaretteGiorniChiusi,
+  notteIntera,
+  timerRispettatiDiFila,
+} from '../core/progressi';
 import {
   costoSigaretta,
   prossimaSigaretta,
@@ -115,13 +121,16 @@ export function usePiano(): VistaPiano {
   );
   const versate = multeVersate ?? [];
 
-  // Per il badge di riduzione si usa il target odierno del piano (quante
-  // sigarette il programma concede oggi), non le sigarette gia fumate oggi:
-  // a inizio giornata diOggi.length e sempre 0, il che farebbe scattare
-  // "-75%" ogni mattina prima ancora di accendere la prima sigaretta.
-  // Il target scende ogni giorno con l'intervallo, quindi resta un indicatore
-  // fedele della riduzione programmata rispetto al consumo iniziale.
-  const targetOggi = Math.max(0, Math.floor(1440 / intervalloCorrenteMin));
+  // Per il badge di riduzione si usa la media delle sigarette fumate negli
+  // ultimi 7 giorni chiusi (oggi escluso), non il target teorico del piano:
+  // usare il target premierebbe l'avanzamento del programma anche se
+  // l'utente ha fumato quanto prima, e diOggi.length varrebbe 0 a ogni
+  // inizio giornata, sbloccando i badge prima ancora della prima sigaretta.
+  // Quando non esiste ancora nessun giorno chiuso (piano appena iniziato) si
+  // passa sigaretteAlGiornoIniziali: la riduzione risulta zero, i badge
+  // restano bloccati finche non c'e almeno una giornata intera di dati.
+  const mediaGiorniChiusi = mediaSigaretteGiorniChiusi(stato, ora, 7);
+  const sigaretteMediaBadge = mediaGiorniChiusi ?? profilo.sigaretteAlGiornoIniziali;
 
   // Anche qui si contano solo i giorni chiusi: streakSenzaSgarri include il
   // giorno corrente, ancora in corso, che non e "un giorno intero rispettato"
@@ -132,7 +141,7 @@ export function usePiano(): VistaPiano {
     giorniPuliti: giorniPulitiCompletati,
     streakMax: streakMassima(stato, giornoCorrente),
     risparmioEuro: risparmioCalcolato,
-    sigaretteOggi: targetOggi,
+    sigaretteOggi: sigaretteMediaBadge,
     sigaretteAlGiornoIniziali: profilo.sigaretteAlGiornoIniziali,
     oreSmokeFree: oreSmokeFreeCalcolate,
     timerRispettatiDiFila: timerRispettatiDiFila(stato),
@@ -154,6 +163,9 @@ export function usePiano(): VistaPiano {
     prossima,
     ora,
     giornoCorrente,
+    // Attenzione: questo e VistaPiano.sigaretteOggi, usato dalla card "Oggi"
+    // della Dashboard (consumo reale del giorno in corso). E diverso da
+    // datiBadge.sigaretteOggi sopra, che alimenta i badge di riduzione.
     sigaretteOggi: diOggi.length,
     sgarriOggi: diOggi.filter((s) => s.sgarro).length,
     streak: streakSenzaSgarri(stato, giornoCorrente),

@@ -4,6 +4,7 @@ import { FINESTRA_DEFAULT } from './nightWindow';
 import {
   giorniNelPiano,
   giorniPulitiDopoSgarroPesante,
+  mediaSigaretteGiorniChiusi,
   notteIntera,
   timerRispettatiDiFila,
 } from './progressi';
@@ -113,5 +114,61 @@ describe('giorniNelPiano', () => {
   });
   test('cresce di uno al giorno', () => {
     expect(giorniNelPiano(CFG, t('2026-07-10T00:30:00'))).toBe(10);
+  });
+});
+
+describe('mediaSigaretteGiorniChiusi', () => {
+  test('nessun giorno chiuso: solo sigarette di oggi', () => {
+    const stato = valutaSigarette(
+      [t('2026-07-05T08:00:00'), t('2026-07-05T09:00:00')],
+      CFG,
+    );
+    expect(mediaSigaretteGiorniChiusi(stato, t('2026-07-05T10:00:00'), 7)).toBeNull();
+  });
+
+  test('media su tre giorni chiusi con 10, 14 e 12 sigarette', () => {
+    const timestamps = [
+      ...Array.from({ length: 10 }, (_, i) => t('2026-07-01T00:00:00') + i * 30 * 60_000),
+      ...Array.from({ length: 14 }, (_, i) => t('2026-07-02T00:00:00') + i * 30 * 60_000),
+      ...Array.from({ length: 12 }, (_, i) => t('2026-07-03T00:00:00') + i * 30 * 60_000),
+    ];
+    const stato = valutaSigarette(timestamps, CFG);
+    expect(mediaSigaretteGiorniChiusi(stato, t('2026-07-04T10:00:00'), 7)).toBe(12);
+  });
+
+  test('un giorno chiuso senza sigarette in mezzo abbassa la media', () => {
+    const timestamps = [
+      t('2026-07-01T08:00:00'),
+      t('2026-07-01T09:00:00'), // giorno 1: 2 sigarette
+      // giorno 2 (02/07): nessuna sigaretta, conta come zero
+      t('2026-07-03T08:00:00'), // giorno 3: 1 sigaretta
+    ];
+    const stato = valutaSigarette(timestamps, CFG);
+    // (2 + 0 + 1) / 3 = 1
+    expect(mediaSigaretteGiorniChiusi(stato, t('2026-07-04T10:00:00'), 7)).toBe(1);
+  });
+
+  test('la finestra si ferma a giorni: i piu vecchi non incidono', () => {
+    // 10 giorni chiusi di dati (25/06..04/07), giorni = 7: contano solo gli
+    // ultimi 7 (28/06..04/07), 1 sigaretta ciascuno; i 3 piu vecchi hanno 100
+    // sigarette ciascuno e non devono influenzare la media.
+    const timestamps: number[] = [];
+    for (let i = 0; i < 10; i++) {
+      const giorno = t('2026-06-25T08:00:00') + i * 24 * 60 * 60_000;
+      const n = i < 3 ? 100 : 1;
+      for (let k = 0; k < n; k++) timestamps.push(giorno + k * 60_000);
+    }
+    const stato = valutaSigarette(timestamps, CFG);
+    expect(mediaSigaretteGiorniChiusi(stato, t('2026-07-05T10:00:00'), 7)).toBe(1);
+  });
+
+  test('non conta giorni anteriori alla prima sigaretta mai registrata', () => {
+    const stato = valutaSigarette(
+      [t('2026-07-03T08:00:00'), t('2026-07-03T09:00:00')],
+      CFG,
+    );
+    // Oggi = 05/07: giorni chiusi richiesti 7, ma la prima sigaretta e del 03/07,
+    // quindi solo il 03/07 e il 04/07 (senza sigarette) contano.
+    expect(mediaSigaretteGiorniChiusi(stato, t('2026-07-05T10:00:00'), 7)).toBe(1);
   });
 });

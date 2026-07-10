@@ -53,4 +53,16 @@ describe('Traguardi', () => {
     render(<Traguardi />);
     expect(await screen.findByText(`0 / ${BADGE.length}`)).toBeTruthy();
   });
+
+  test('a inizio piano i badge di riduzione non sono sbloccati', async () => {
+    // Nessun giorno chiuso: la media delle sigarette sugli ultimi 7 giorni
+    // chiusi non esiste ancora, quindi -25/-50/-75% non devono scattare solo
+    // perche il piano e appena partito.
+    render(<Traguardi />);
+    await screen.findByText(`0 / ${BADGE.length}`);
+    for (const titolo of ['−25%', '−50%', '−75%']) {
+      const voce = screen.getByText(titolo).closest('li');
+      expect(voce?.textContent?.startsWith('·')).toBe(true);
+    }
+  });
 });

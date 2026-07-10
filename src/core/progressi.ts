@@ -1,6 +1,6 @@
 import { giornoDiPiano, type ConfigPiano, type StatoPiano } from './engine';
 import { SOGLIA_SGARRO_PESANTE_MIN } from './messages';
-import { chiaveGiorno, giornoPrecedente } from './storico';
+import { chiaveGiorno, giornoPrecedente, sigaretteDelGiorno } from './storico';
 
 /** Sigarette consecutive senza sgarro, contate dall'ultima all'indietro. */
 export function timerRispettatiDiFila(stato: StatoPiano): number {
@@ -53,4 +53,35 @@ export function giorniPulitiDopoSgarroPesante(stato: StatoPiano, giornoCorrente:
 /** Giorni di piano trascorsi, primo giorno incluso. */
 export function giorniNelPiano(cfg: ConfigPiano, ora: number): number {
   return giornoDiPiano(ora, cfg.inizioPiano) + 1;
+}
+
+/**
+ * Media delle sigarette fumate negli ultimi `giorni` giorni di calendario chiusi
+ * (oggi escluso). Ritorna null quando non c'e ancora nessun giorno chiuso: in quel
+ * caso i badge di riduzione non devono sbloccarsi.
+ */
+export function mediaSigaretteGiorniChiusi(
+  stato: StatoPiano,
+  ora: number,
+  giorni: number,
+): number | null {
+  if (stato.sigarette.length === 0) return null;
+
+  const primoGiorno = stato.sigarette.reduce(
+    (min, s) => (chiaveGiorno(s.timestamp) < min ? chiaveGiorno(s.timestamp) : min),
+    chiaveGiorno(stato.sigarette[0].timestamp),
+  );
+
+  let giorno = giornoPrecedente(chiaveGiorno(ora));
+  let somma = 0;
+  let conteggio = 0;
+
+  for (let i = 0; i < giorni; i++) {
+    if (giorno < primoGiorno) break;
+    somma += sigaretteDelGiorno(stato.sigarette, giorno).fumate;
+    conteggio++;
+    giorno = giornoPrecedente(giorno);
+  }
+
+  return conteggio === 0 ? null : somma / conteggio;
 }
