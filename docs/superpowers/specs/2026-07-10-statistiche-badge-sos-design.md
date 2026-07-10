@@ -158,8 +158,8 @@ Dashboard: riquadro compatto a due righe sotto la griglia.
 ```
 
 `○` in corso, `✓` riuscito, `✗` fallito. Il riquadro non rimpiazza nulla: si
-aggiunge sotto la griglia esistente, sopra il pulsante HO FUMATO. Va verificato
-sul telefono che la dashboard resti senza scroll.
+aggiunge sotto la griglia delle schede, sopra il riquadro SOS. Va verificato sul
+telefono che la dashboard resti senza scroll.
 
 `StatoGiorno` è un tipo nuovo esposto da `obiettivi.ts`: le sigarette del giorno
 (`SigarettaValutata[]`), il target del giorno, il credito corrente e il numero di
