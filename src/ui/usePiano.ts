@@ -141,7 +141,6 @@ export function usePiano(): VistaPiano {
       notteIntera: notteIntera(stato, cfg),
       giorniPulitiDopoSgarroPesante: giorniPulitiDopoSgarroPesante(stato, giornoCorrente),
       obiettiviCentratiDiFila: obiettiviCentratiDiFila(stato, cfg, oraStabileMs),
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     };
     // giornoOggi (non ora) e la dipendenza che conta: fa scattare il
     // ricalcolo una volta al giorno. profilo, smokes, pause sono gli altri
