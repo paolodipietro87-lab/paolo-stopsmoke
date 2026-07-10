@@ -174,8 +174,8 @@ export function Impostazioni() {
       <h2>Notifiche</h2>
       <p className="sottotitolo">
         {profilo.notifiche
-          ? 'Avviso alla scadenza del timer. Se il telefono chiude l app puo saltare: il countdown resta la verita.'
-          : 'Un avviso quando il timer scade. Nessun server, nessun tracciamento.'}
+          ? 'Avviso alla scadenza del timer, solo con l app aperta o aperta da poco. Ad app chiusa non arriva: Android chiude la pagina e il promemoria muore con lei. Il countdown resta la verita.'
+          : 'Un avviso quando il timer scade, solo con l app aperta o aperta da poco. Ad app chiusa non arriva. Nessun server, nessun tracciamento.'}
       </p>
       <button className="pulsante-secondario" onClick={commutaNotifiche}>
         {profilo.notifiche ? 'Disattiva le notifiche' : 'Attiva le notifiche'}

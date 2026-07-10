@@ -74,6 +74,25 @@ describe('Impostazioni', () => {
     await waitFor(async () => expect((await leggiProfilo())?.notifiche).toBe(true));
   });
 
+  // Il promemoria e un setTimeout nella scheda: se Android chiude la pagina, muore con lei.
+  // Il toggle non deve promettere una notifica che ad app chiusa non arrivera mai.
+  test('il toggle notifiche dichiara che ad app chiusa la notifica non arriva', async () => {
+    const richiesta = vi.fn().mockResolvedValue('granted');
+    vi.stubGlobal('Notification', { permission: 'default', requestPermission: richiesta });
+
+    const utente = userEvent.setup();
+    render(<App />);
+    await screen.findByText('Ciao Paolo.');
+    await utente.click(screen.getByRole('button', { name: 'Impostazioni' }));
+
+    expect(await screen.findByText(/ad app chiusa non arriva/i)).toBeTruthy();
+
+    await utente.click(await screen.findByRole('button', { name: 'Attiva le notifiche' }));
+    await screen.findByRole('button', { name: 'Disattiva le notifiche' });
+
+    expect(await screen.findByText(/ad app chiusa non arriva/i)).toBeTruthy();
+  });
+
   test('permesso negato dal browser: niente notifiche, lo dice chiaro', async () => {
     vi.stubGlobal('Notification', { permission: 'denied', requestPermission: vi.fn() });
 
