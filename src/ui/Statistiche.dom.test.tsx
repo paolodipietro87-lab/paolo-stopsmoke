@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import 'fake-indexeddb/auto';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { db } from '../data/db';
 import { Statistiche } from './Statistiche';
@@ -78,5 +78,33 @@ describe('storico del giorno', () => {
 
     expect(screen.getByText('Nessuna sigaretta. Giornata pulita.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Elimina' })).toBeNull();
+  });
+
+  test('a mezzanotte oggi avanza da solo, senza sbloccare il futuro', async () => {
+    vi.setSystemTime(new Date('2026-07-10T23:59:30').getTime());
+    render(<Statistiche />);
+    await screen.findByText('ven 10 luglio 2026');
+    expect(screen.getByRole('button', { name: 'Giorno successivo' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByLabelText('Vai al giorno').getAttribute('max')).toBe('2026-07-10');
+
+    // Attraversa la mezzanotte: v.ora (da usePiano) tocca ogni secondo, quindi
+    // "oggi" deve avanzare da solo senza bisogno di un rerender esterno.
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    // Il giorno mostrato e ancora quello di ieri (l'utente non ha navigato),
+    // ma "oggi" e ormai l'11: il pulsante avanti deve essersi sbloccato
+    // perche il giorno mostrato non e piu quello corrente.
+    expect(screen.getByText('ven 10 luglio 2026')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Giorno successivo' }).hasAttribute('disabled')).toBe(false);
+    expect(screen.getByLabelText('Vai al giorno').getAttribute('max')).toBe('2026-07-11');
+
+    // Navigando avanti si arriva al vero giorno corrente: li il pulsante deve
+    // tornare disabilitato, non trattare l'11 come se fosse ancora futuro.
+    fireEvent.click(screen.getByRole('button', { name: 'Giorno successivo' }));
+
+    expect(screen.getByText('sab 11 luglio 2026')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Giorno successivo' }).hasAttribute('disabled')).toBe(true);
   });
 });

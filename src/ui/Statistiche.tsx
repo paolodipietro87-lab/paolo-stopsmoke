@@ -22,7 +22,11 @@ export function Statistiche() {
   const acquisti = useLiveQuery(() => db.purchases.toArray(), []);
   const multe = useLiveQuery(() => db.penalties.toArray(), []);
   const [retroattiva, setRetroattiva] = useState(() => oraLocale(Date.now()));
-  const oggi = chiaveGiorno(Date.now());
+  // Deriva "oggi" da v.ora (aggiornato ogni secondo da usePiano), non da
+  // Date.now() valutato una volta sola al render: se l'app resta aperta a
+  // cavallo della mezzanotte, oggi deve avanzare da solo, altrimenti il
+  // pulsante "Giorno successivo" restrebbe sbloccato sul giorno ormai corrente.
+  const oggi = chiaveGiorno(v.ora);
   const [giornoMostrato, setGiornoMostrato] = useState(oggi);
 
   if (v.caricamento || !v.cfg || !v.stato || !acquisti || !multe) return null;
