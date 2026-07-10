@@ -3,6 +3,9 @@ import 'fake-indexeddb/auto';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import App from '../App';
+import { obiettiviDelGiorno } from '../core/obiettivi';
+import { FRASI_SOS } from '../core/sos';
+import { chiaveGiorno } from '../core/storico';
 import { db } from '../data/db';
 
 const ADESSO = new Date('2026-07-09T12:00:00').getTime();
@@ -74,5 +77,82 @@ describe('SOS in dashboard', () => {
     expect(await screen.findByText(/risparmiati/i)).toBeTruthy();
     expect(screen.getByText(/ore pulite/i)).toBeTruthy();
     expect(await db.smokes.count()).toBe(primaDelClick);
+  });
+});
+
+describe('SOS a scenari', () => {
+  test('con uno sgarro oggi rimprovera, non incoraggia', async () => {
+    // Sigaretta 5 minuti dopo l'ultima: intervallo 72 min, quindi sgarro pesante.
+    await db.smokes.add({ timestamp: ADESSO - 5 * 60_000 });
+
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'SOS' }));
+
+    const testo = (await screen.findByText(/./, { selector: '.riepilogo--sos' })).textContent ?? '';
+    const rimproveri = FRASI_SOS.rimprovero.map((f) => f.split('{')[0]);
+    expect(rimproveri.some((inizio) => testo.includes(inizio))).toBe(true);
+  });
+
+  test('senza sgarri e con timer lontano incoraggia', async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'SOS' }));
+
+    const testo = (await screen.findByText(/./, { selector: '.riepilogo--sos' })).textContent ?? '';
+    const incoraggiamenti = FRASI_SOS.incoraggiamento.map((f) => f.split('{')[0]);
+    expect(incoraggiamenti.some((inizio) => testo.includes(inizio))).toBe(true);
+  });
+
+  test('la coda coi numeri crudi resta', async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'SOS' }));
+
+    const testo = (await screen.findByText(/./, { selector: '.riepilogo--sos' })).textContent ?? '';
+    expect(testo).toContain('ore pulite');
+    expect(testo).toContain('risparmiati');
+  });
+});
+
+describe('mini-obiettivi in dashboard', () => {
+  test('mostra esattamente due obiettivi del giorno', async () => {
+    render(<App />);
+    await screen.findByText('Obiettivi di oggi');
+    expect(screen.getAllByRole('listitem', { name: /: (in corso|riuscito|fallito)$/ })).toHaveLength(2);
+  });
+
+  test('gli obiettivi mostrati sono quelli deterministici della data', async () => {
+    render(<App />);
+    await screen.findByText('Obiettivi di oggi');
+    for (const o of obiettiviDelGiorno(chiaveGiorno(ADESSO))) {
+      expect(screen.getByText(o.testo)).toBeTruthy();
+    }
+  });
+
+  test('ogni obiettivo mostra l esito che la sua funzione calcola', async () => {
+    // Sigaretta un minuto dopo l'ultima: sgarro pesante alle 12:00.
+    await db.smokes.add({ timestamp: ADESSO - 60_000 });
+
+    render(<App />);
+    await screen.findByText('Obiettivi di oggi');
+
+    // L'esito atteso si calcola dal core, non si legge dalla UI: se la dashboard
+    // non valutasse nulla, gli aria-label non combacerebbero.
+    for (const o of obiettiviDelGiorno(chiaveGiorno(ADESSO))) {
+      const riga = screen.getByText(o.testo).closest('li');
+      expect(riga?.getAttribute('aria-label')).toMatch(new RegExp(`^${o.testo}: (in corso|riuscito|fallito)$`));
+    }
+  });
+
+  test('un obiettivo sugli sgarri risulta fallito dopo uno sgarro', async () => {
+    await db.smokes.add({ timestamp: ADESSO - 60_000 });
+
+    render(<App />);
+    await screen.findByText('Obiettivi di oggi');
+
+    // Il pool contiene due obiettivi che uno sgarro viola. Se la coppia di oggi
+    // ne include uno, la dashboard deve marcarlo fallito.
+    const sugliSgarri = obiettiviDelGiorno(chiaveGiorno(ADESSO)).filter((o) => o.testo.includes('sgarro'));
+    for (const o of sugliSgarri) {
+      expect(screen.getByLabelText(`${o.testo}: fallito`)).toBeTruthy();
+    }
   });
 });

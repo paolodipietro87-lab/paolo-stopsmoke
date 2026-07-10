@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { intervalloGiorno } from '../core/interval';
 import { categoriaSgarro, messaggio } from '../core/messages';
+import { obiettiviDelGiorno, type EsitoObiettivo } from '../core/obiettivi';
+import { fraseSos } from '../core/sos';
+import { chiaveGiorno, sigaretteDelGiorno } from '../core/storico';
 import { annullaFumata, fuma } from '../data/actions';
 import { salvaProfilo } from '../data/db';
 import { Anello } from './Anello';
@@ -38,6 +41,19 @@ export function Dashboard() {
   const progresso = prossima.scadenza === null ? 1 : 1 - secondiMancanti / (intervalloOggi * 60);
   const targetOggi = Math.max(0, Math.floor(1440 / intervalloOggi));
 
+  const oggiChiave = chiaveGiorno(v.ora);
+  const statoGiorno = {
+    giorno: oggiChiave,
+    sigarette: sigaretteDelGiorno(stato.sigarette, oggiChiave).sigarette,
+    targetOggi,
+    credito: prossima.credito,
+    fineNotteOra: cfg.notte.fineOra,
+  };
+  const obiettivi = obiettiviDelGiorno(oggiChiave).map((o) => ({
+    testo: o.testo,
+    esito: o.esito(statoGiorno, v.ora),
+  }));
+
   async function haFumato() {
     const ora = Date.now();
     const esito = await fuma(ora, cfg);
@@ -62,9 +78,23 @@ export function Dashboard() {
   const puoPassareAMantenimento = !profilo.mantenimento && intervalloOggi > 1440 && v.oreSmokeFree >= 24;
 
   function craving() {
+    const ora = Date.now();
+    const frase = fraseSos(
+      {
+        mantenimento: v.profilo?.mantenimento === true,
+        secondiMancanti: v.prossima?.secondiMancanti ?? 0,
+        puoiFumare: v.prossima?.puoiFumare ?? true,
+        sgarriOggi: v.sgarriOggi,
+        multeDaVersareEuro: v.multeDaVersareEuro,
+        streak: v.streak,
+        oreSmokeFree: v.oreSmokeFree,
+        risparmioEuro: v.risparmioEuro,
+      },
+      ora,
+    );
     setSos(
-      `${messaggio('milestone', Date.now())} ${Math.floor(v.oreSmokeFree)} ore pulite. ` +
-        `${formattaEuro(v.risparmioEuro)} risparmiati. Una sigaretta ora butta via tutto questo.`,
+      `${frase} ${Math.floor(v.oreSmokeFree)} ore pulite. ` +
+        `${formattaEuro(v.risparmioEuro)} risparmiati.`,
     );
   }
 
@@ -163,6 +193,19 @@ export function Dashboard() {
         <Scheda etichetta="Credito" valore={`${prossima.credito} / 2`} />
       </div>
 
+      <h2 className="obiettivi__titolo">Obiettivi di oggi</h2>
+      <ul className="obiettivi">
+        {obiettivi.map((o) => (
+          <li
+            key={o.testo}
+            className={`obiettivo obiettivo--${o.esito}`}
+            aria-label={`${o.testo}: ${etichettaEsito(o.esito)}`}
+          >
+            <span aria-hidden="true">{ICONA_ESITO[o.esito]}</span> {o.testo}
+          </li>
+        ))}
+      </ul>
+
       {sos && <div className="riepilogo riepilogo--sos">{sos}</div>}
     </main>
   );
@@ -175,6 +218,16 @@ function Scheda({ etichetta, valore, allarme }: { etichetta: string; valore: str
       <div className="scheda__valore">{valore}</div>
     </div>
   );
+}
+
+const ICONA_ESITO: Record<EsitoObiettivo, string> = {
+  'in-corso': '○',
+  riuscito: '✓',
+  fallito: '✗',
+};
+
+function etichettaEsito(e: EsitoObiettivo): string {
+  return e === 'in-corso' ? 'in corso' : e;
 }
 
 function riepilogoGiornata(fumate: number, sgarri: number, target: number): string {

@@ -1,9 +1,16 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
+import {
+  chiaveGiorno,
+  etichettaGiorno,
+  giornoPrecedente,
+  giornoSuccessivo,
+  sigaretteDelGiorno,
+} from '../core/storico';
 import { reportEconomico } from '../core/stats';
 import { annullaFumata, fuma } from '../data/actions';
 import { db } from '../data/db';
-import { formattaEuro } from './format';
+import { formattaEuro, sgarriInLettere } from './format';
 import { usePiano } from './usePiano';
 
 function oraLocale(t: number): string {
@@ -15,6 +22,12 @@ export function Statistiche() {
   const acquisti = useLiveQuery(() => db.purchases.toArray(), []);
   const multe = useLiveQuery(() => db.penalties.toArray(), []);
   const [retroattiva, setRetroattiva] = useState(() => oraLocale(Date.now()));
+  // Deriva "oggi" da v.ora (aggiornato ogni secondo da usePiano), non da
+  // Date.now() valutato una volta sola al render: se l'app resta aperta a
+  // cavallo della mezzanotte, oggi deve avanzare da solo, altrimenti il
+  // pulsante "Giorno successivo" restrebbe sbloccato sul giorno ormai corrente.
+  const oggi = chiaveGiorno(v.ora);
+  const [giornoMostrato, setGiornoMostrato] = useState(oggi);
 
   if (v.caricamento || !v.cfg || !v.stato || !acquisti || !multe) return null;
 
@@ -30,6 +43,12 @@ export function Statistiche() {
   async function aggiungiRetroattiva() {
     await fuma(new Date(retroattiva).getTime(), v.cfg!);
   }
+
+  const delGiorno = sigaretteDelGiorno(v.stato.sigarette, giornoMostrato);
+  const riepilogo =
+    delGiorno.fumate === 0
+      ? 'Nessuna sigaretta. Giornata pulita.'
+      : `${delGiorno.fumate} ${delGiorno.fumate === 1 ? 'fumata' : 'fumate'}, ${sgarriInLettere(delGiorno.sgarri)}`;
 
   return (
     <main>
@@ -60,7 +79,7 @@ export function Statistiche() {
       <ul>
         {[...perGiorno.entries()].reverse().map(([giorno, g]) => (
           <li key={giorno}>
-            Giorno {giorno + 1}: {g.fumate} sigarette{g.sgarri > 0 ? `, ${g.sgarri} sgarri` : ', nessuno sgarro'}
+            Giorno {giorno + 1}: {g.fumate} {g.fumate === 1 ? 'sigaretta' : 'sigarette'}, {sgarriInLettere(g.sgarri)}
           </li>
         ))}
       </ul>
@@ -80,12 +99,45 @@ export function Statistiche() {
         AGGIUNGI SIGARETTA
       </button>
 
-      <h2 style={{ marginTop: '1.5rem' }}>Storico sigarette</h2>
+      <h2 style={{ marginTop: '1.5rem' }}>Storico del giorno</h2>
+      <div className="navigatore-giorno">
+        <button
+          className="pulsante-secondario"
+          aria-label="Giorno precedente"
+          onClick={() => setGiornoMostrato(giornoPrecedente(giornoMostrato))}
+        >
+          ‹
+        </button>
+        <strong>{etichettaGiorno(giornoMostrato)}</strong>
+        <button
+          className="pulsante-secondario"
+          aria-label="Giorno successivo"
+          disabled={giornoMostrato >= oggi}
+          onClick={() => setGiornoMostrato(giornoSuccessivo(giornoMostrato))}
+        >
+          ›
+        </button>
+      </div>
+      <label className="campo">
+        <span className="campo__etichetta">Vai al giorno</span>
+        <input
+          className="campo__input"
+          type="date"
+          max={oggi}
+          value={giornoMostrato}
+          onChange={(e) => e.target.value && setGiornoMostrato(e.target.value)}
+        />
+      </label>
+      <p className="sottotitolo">{riepilogo}</p>
       <ul>
-        {[...v.stato.sigarette].reverse().slice(0, 50).map((s) => (
+        {delGiorno.sigarette.map((s) => (
           <li key={s.timestamp}>
-            {new Date(s.timestamp).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}
-            {s.sgarro ? ` — sgarro, ${s.minutiAnticipo} min di anticipo` : s.usaCredito ? ' — con credito' : ' — regolare'}{' '}
+            {new Date(s.timestamp).toLocaleTimeString('it-IT', { timeStyle: 'short' })}
+            {s.sgarro
+              ? ` — sgarro, ${s.minutiAnticipo} min di anticipo`
+              : s.usaCredito
+                ? ' — con credito'
+                : ' — regolare'}{' '}
             <button className="pulsante-secondario" onClick={() => cancella(s.timestamp)}>
               Elimina
             </button>

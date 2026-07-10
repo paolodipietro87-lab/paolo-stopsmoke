@@ -15,3 +15,9 @@ export function formattaEuro(importo: number): string {
 export function formattaData(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
 }
+
+/** "nessuno sgarro" / "1 sgarro" / "3 sgarri". */
+export function sgarriInLettere(n: number): string {
+  if (n === 0) return 'nessuno sgarro';
+  return n === 1 ? '1 sgarro' : `${n} sgarri`;
+}
