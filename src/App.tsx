@@ -8,6 +8,7 @@ import { Onboarding } from './ui/Onboarding';
 import { Salvadanaio } from './ui/Salvadanaio';
 import { Statistiche } from './ui/Statistiche';
 import { Traguardi } from './ui/Traguardi';
+import { useAltezzaNav } from './ui/useAltezzaNav';
 
 const SEZIONI = {
   oggi: { titolo: 'Oggi', componente: Dashboard },
@@ -32,18 +33,27 @@ export default function App() {
   return (
     <>
       <Corrente />
-      <nav className="navigazione">
-        {(Object.keys(SEZIONI) as Sezione[]).map((chiave) => (
-          <button
-            key={chiave}
-            className={chiave === sezione ? 'navigazione__voce navigazione__voce--attiva' : 'navigazione__voce'}
-            aria-current={chiave === sezione ? 'page' : undefined}
-            onClick={() => setSezione(chiave)}
-          >
-            {SEZIONI[chiave].titolo}
-          </button>
-        ))}
-      </nav>
+      <Navigazione sezione={sezione} onCambia={setSezione} />
     </>
+  );
+}
+
+/** Barra fissa in fondo. Separata da App perche il suo nodo va misurato al montaggio. */
+function Navigazione({ sezione, onCambia }: { sezione: Sezione; onCambia: (s: Sezione) => void }) {
+  const rif = useAltezzaNav<HTMLElement>();
+
+  return (
+    <nav className="navigazione" ref={rif}>
+      {(Object.keys(SEZIONI) as Sezione[]).map((chiave) => (
+        <button
+          key={chiave}
+          className={chiave === sezione ? 'navigazione__voce navigazione__voce--attiva' : 'navigazione__voce'}
+          aria-current={chiave === sezione ? 'page' : undefined}
+          onClick={() => onCambia(chiave)}
+        >
+          {SEZIONI[chiave].titolo}
+        </button>
+      ))}
+    </nav>
   );
 }

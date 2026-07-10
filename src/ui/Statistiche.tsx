@@ -10,7 +10,7 @@ import {
 import { reportEconomico } from '../core/stats';
 import { annullaFumata, fuma } from '../data/actions';
 import { db } from '../data/db';
-import { formattaEuro } from './format';
+import { formattaEuro, sgarriInLettere } from './format';
 import { usePiano } from './usePiano';
 
 function oraLocale(t: number): string {
@@ -48,8 +48,7 @@ export function Statistiche() {
   const riepilogo =
     delGiorno.fumate === 0
       ? 'Nessuna sigaretta. Giornata pulita.'
-      : `${delGiorno.fumate} ${delGiorno.fumate === 1 ? 'fumata' : 'fumate'}, ` +
-        `${delGiorno.sgarri === 0 ? 'nessuno sgarro' : `${delGiorno.sgarri} sgarri`}`;
+      : `${delGiorno.fumate} ${delGiorno.fumate === 1 ? 'fumata' : 'fumate'}, ${sgarriInLettere(delGiorno.sgarri)}`;
 
   return (
     <main>
@@ -80,7 +79,7 @@ export function Statistiche() {
       <ul>
         {[...perGiorno.entries()].reverse().map(([giorno, g]) => (
           <li key={giorno}>
-            Giorno {giorno + 1}: {g.fumate} sigarette{g.sgarri > 0 ? `, ${g.sgarri} sgarri` : ', nessuno sgarro'}
+            Giorno {giorno + 1}: {g.fumate} {g.fumate === 1 ? 'sigaretta' : 'sigarette'}, {sgarriInLettere(g.sgarri)}
           </li>
         ))}
       </ul>

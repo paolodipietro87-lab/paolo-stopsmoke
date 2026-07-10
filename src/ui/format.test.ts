@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { formattaDurata, formattaEuro } from './format';
+import { formattaDurata, formattaEuro, sgarriInLettere } from './format';
 
 describe('formattaDurata', () => {
   test('sotto l ora: minuti e secondi', () => {
@@ -30,5 +30,20 @@ describe('formattaEuro', () => {
 
   test('arrotonda', () => {
     expect(formattaEuro(0.555)).toBe('0,56 €');
+  });
+});
+
+describe('sgarriInLettere', () => {
+  test('nessuno sgarro al plurale non esiste', () => {
+    expect(sgarriInLettere(0)).toBe('nessuno sgarro');
+  });
+
+  test('uno solo resta singolare', () => {
+    expect(sgarriInLettere(1)).toBe('1 sgarro');
+  });
+
+  test('da due in su e plurale', () => {
+    expect(sgarriInLettere(2)).toBe('2 sgarri');
+    expect(sgarriInLettere(11)).toBe('11 sgarri');
   });
 });

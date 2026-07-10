@@ -35,7 +35,10 @@ body {
 #root {
   max-width: 32rem;
   margin: 0 auto;
-  padding: var(--sp-4) var(--sp-4) 5rem;
+  /* La barra e fixed: lo spazio in fondo va riservato a mano. La sua altezza
+     cambia col numero di righe delle voci, quindi useAltezzaNav la misura e la
+     pubblica in --altezza-nav. Il ripiego copre il caso a due righe. */
+  padding: var(--sp-4) var(--sp-4) calc(var(--altezza-nav, 8rem) + var(--sp-4));
 }
 
 .navigazione {

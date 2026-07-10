@@ -2,7 +2,7 @@
 import 'fake-indexeddb/auto';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import App from '../App';
 import { db } from '../data/db';
 
@@ -67,5 +67,43 @@ describe('flusso reale onboarding -> dashboard', () => {
     await utente.click(screen.getByRole('button', { name: 'Annulla' }));
     await waitFor(async () => expect(await db.penalties.count()).toBe(0));
     expect(await db.smokes.count()).toBe(1);
+  });
+});
+
+describe('spazio riservato alla barra di navigazione', () => {
+  beforeEach(async () => {
+    await db.profile.add({
+      nome: 'Paolo',
+      dataInizio: Date.now(),
+      sigaretteAlGiornoIniziali: 20,
+      prezzoPacchetto: 5.5,
+      incrementoGiornalieroMin: 10,
+    });
+    await db.smokes.add({ timestamp: Date.now() - 10 * 60_000 });
+  });
+
+  test('pubblica l altezza reale della barra come variabile CSS', async () => {
+    // La barra e fixed e va a capo su schermi stretti: la sua altezza non e nota
+    // a priori. Senza questa misura, il fondo delle sezioni finisce sotto la barra.
+    const nav = { offsetHeight: 117 };
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(nav.offsetHeight);
+
+    render(<App />);
+    await screen.findByText('Ciao Paolo.');
+
+    await waitFor(() =>
+      expect(document.documentElement.style.getPropertyValue('--altezza-nav')).toBe('117px'),
+    );
+  });
+
+  test('non esplode dove ResizeObserver non esiste', async () => {
+    const originale = globalThis.ResizeObserver;
+    // @ts-expect-error: simuliamo un ambiente senza ResizeObserver
+    delete globalThis.ResizeObserver;
+
+    render(<App />);
+    expect(await screen.findByText('Ciao Paolo.')).toBeTruthy();
+
+    globalThis.ResizeObserver = originale;
   });
 });
